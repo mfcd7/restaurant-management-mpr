@@ -6,24 +6,27 @@ import Dashboard from './pages/Dashboard';
 import AdminPage from './pages/AdminPage';
 import KDSPage from './pages/KDSPage';
 import WaiterPage from './pages/WaiterPage';
+import { RestaurantProvider } from './context/RestaurantContext';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
+    <RestaurantProvider>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
 
-        {/* Internal Dashboard Routes */}
-        <Route element={<Layout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/kds" element={<KDSPage />} />
-          <Route path="/waiter" element={<WaiterPage />} />
-        </Route>
-      </Routes>
-    </Router>
+          {/* Internal Dashboard Routes */}
+          <Route element={<Layout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/kds" element={<KDSPage />} />
+            <Route path="/waiter" element={<WaiterPage />} />
+          </Route>
+        </Routes>
+      </Router>
+    </RestaurantProvider>
   );
 }
 

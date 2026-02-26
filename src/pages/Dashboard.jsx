@@ -2,17 +2,17 @@ import { TrendingUp, Users, IndianRupee, ArrowUpRight, ArrowDownRight, Clock } f
 
 export default function Dashboard() {
   const stats = [
-    { name: 'Today\'s Revenue', value: '₹4,289', change: '+12.5%', positive: true, icon: IndianRupee },
+    { name: 'Today\'s Revenue', value: '₹42,890', change: '+12.5%', positive: true, icon: IndianRupee },
     { name: 'Active Orders', value: '42', change: '+5.2%', positive: true, icon: Clock },
     { name: 'Served Customers', value: '184', change: '-2.4%', positive: false, icon: Users },
-    { name: 'Average Ticket', value: '₹38.50', change: '+8.1%', positive: true, icon: TrendingUp },
+    { name: 'Average Ticket', value: '₹850', change: '+8.1%', positive: true, icon: TrendingUp },
   ];
 
   const recentOrders = [
-    { id: '#1024', table: 'T-12', status: 'ready', time: '2 min ago', total: '₹85.00' },
-    { id: '#1025', table: 'T-04', status: 'cooking', time: '5 min ago', total: '₹142.50' },
-    { id: '#1026', table: 'T-08', status: 'pending', time: '8 min ago', total: '₹45.00' },
-    { id: '#1027', table: 'T-02', status: 'ready', time: '12 min ago', total: '₹210.00' },
+    { id: '#1024', table: 'T-12', status: 'ready', time: '2 min ago', total: '₹850' },
+    { id: '#1025', table: 'T-04', status: 'cooking', time: '5 min ago', total: '₹1425' },
+    { id: '#1026', table: 'T-08', status: 'pending', time: '8 min ago', total: '₹450' },
+    { id: '#1027', table: 'T-02', status: 'ready', time: '12 min ago', total: '₹2100' },
   ];
 
   return (
@@ -74,7 +74,7 @@ export default function Dashboard() {
                 <div className="text-right">
                   <p className="text-sm font-bold text-slate-900">{order.total}</p>
                   <p className={`text-xs font-medium capitalize mt-0.5 ${order.status === 'ready' ? 'text-emerald-600' :
-                      order.status === 'cooking' ? 'text-amber-500' : 'text-slate-500'
+                    order.status === 'cooking' ? 'text-amber-500' : 'text-slate-500'
                     }`}>
                     {order.status}
                   </p>
