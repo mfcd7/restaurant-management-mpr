@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { LineChart, BarChart3, Users, Settings, Database, Activity, Receipt, Send, CheckCircle2 } from 'lucide-react';
+import { LineChart, BarChart3, Users, Settings, Database, Activity, Receipt, Send, CheckCircle2, ChefHat } from 'lucide-react';
 import { useRestaurant } from '../context/RestaurantContext';
+import WaiterPage from './WaiterPage';
+import KDSPage from './KDSPage';
 
 export default function AdminPage() {
   const { orders, updateOrderStatus } = useRestaurant();
@@ -52,6 +54,24 @@ export default function AdminPage() {
             }`}
         >
           <Receipt className="w-4 h-4" /> E-Billing & Completed Orders
+        </button>
+        <button
+          onClick={() => setActiveTab('waiter')}
+          className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === 'waiter'
+            ? 'border-indigo-600 text-indigo-600'
+            : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'
+            }`}
+        >
+          <Users className="w-4 h-4" /> Waiter View
+        </button>
+        <button
+          onClick={() => setActiveTab('kitchen')}
+          className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === 'kitchen'
+            ? 'border-indigo-600 text-indigo-600'
+            : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'
+            }`}
+        >
+          <ChefHat className="w-4 h-4" /> Kitchen View
         </button>
       </div>
 
@@ -168,7 +188,7 @@ export default function AdminPage() {
               </div>
             </div>
           </>
-        ) : (
+        ) : activeTab === 'billing' ? (
           <>
             {/* Billing Tab Content */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
@@ -224,6 +244,14 @@ export default function AdminPage() {
               )}
             </div>
           </>
+        ) : activeTab === 'waiter' ? (
+          <div className="bg-slate-50 rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-[800px] relative">
+            <WaiterPage embedded={true} />
+          </div>
+        ) : (
+          <div className="bg-slate-50 rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-[800px] relative">
+            <KDSPage embedded={true} />
+          </div>
         )}
       </div>
     </div>

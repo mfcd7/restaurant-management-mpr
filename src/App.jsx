@@ -11,7 +11,7 @@ import { RestaurantProvider } from './context/RestaurantContext';
 function App() {
   return (
     <RestaurantProvider>
-      <Router>
+      <Router basename="/restaurant-management-mpr/">
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />

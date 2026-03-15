@@ -1,7 +1,7 @@
 import { Clock, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useRestaurant } from '../context/RestaurantContext';
 
-export default function KDSPage() {
+export default function KDSPage({ embedded = false }) {
   const { orders, updateOrderStatus } = useRestaurant();
 
   // Filter orders for KDS
@@ -15,7 +15,7 @@ export default function KDSPage() {
   };
 
   return (
-    <div className="p-8 h-screen flex flex-col max-w-[1600px] mx-auto">
+    <div className={`p-8 flex flex-col max-w-[1600px] mx-auto ${embedded ? 'h-full' : 'h-screen'}`}>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Kitchen Display System</h1>

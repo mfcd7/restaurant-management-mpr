@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Users, Search, Coffee, ChevronRight, Plus, X } from 'lucide-react';
+import { Users, Search, Coffee, ChevronRight, Plus, X, Pencil, Ban } from 'lucide-react';
 import { useRestaurant } from '../context/RestaurantContext';
 
-export default function WaiterPage() {
-  const { tables, getMenuItems, placeOrder, calculateTableBill } = useRestaurant();
+export default function WaiterPage({ embedded = false }) {
+  const { tables, orders, getMenuItems, placeOrder, calculateTableBill, cancelOrder, updateOrderItems } = useRestaurant();
   const [activeTab, setActiveTab] = useState('all');
   const [activeTableId, setActiveTableId] = useState(null);
   const [cart, setCart] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
 
   const menuItems = getMenuItems();
 
@@ -34,10 +35,12 @@ export default function WaiterPage() {
 
   const handleTableClick = (id) => {
     setActiveTableId(id);
+    setIsEditing(false);
     setCart([]); // reset cart when switching tables
   };
 
   const activeTable = tables.find(t => t.id === activeTableId);
+  const activeOrder = activeTable?.currentOrder ? orders.find(o => o.id === activeTable.currentOrder) : null;
 
   const addToCart = (item) => {
     setCart(prev => {
@@ -60,8 +63,29 @@ export default function WaiterPage() {
     }
   };
 
+  const handleEditClick = () => {
+    setCart(activeOrder.items);
+    setIsEditing(true);
+  };
+
+  const handleUpdateOrder = () => {
+    if (cart.length > 0 && activeOrder) {
+      updateOrderItems(activeOrder.id, cart);
+      setIsEditing(false);
+      setCart([]);
+    }
+  };
+
+  const handleCancelOrder = () => {
+    if (activeOrder) {
+      cancelOrder(activeOrder.id);
+      setIsEditing(false);
+      setCart([]);
+    }
+  };
+
   return (
-    <div className="p-8 max-w-[1400px] mx-auto flex gap-8 h-screen">
+    <div className={`p-8 max-w-[1400px] mx-auto flex gap-8 ${embedded ? 'h-full' : 'h-screen'}`}>
       <div className="flex-1 flex flex-col">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -154,69 +178,151 @@ export default function WaiterPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto bg-slate-50/30 p-4 space-y-6">
-              {/* Quick Menu Selection */}
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">Quick Menu</h3>
-                <div className="space-y-2">
-                  {menuItems.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => addToCart(item)}
-                      className="w-full text-left bg-white p-3 rounded-lg border border-slate-200 hover:border-teal-500 hover:shadow-sm transition-all flex items-center justify-between group"
-                    >
-                      <div>
-                        <p className="font-bold text-slate-900 text-sm">{item.name}</p>
-                        <p className="text-xs text-slate-500">₹{item.price.toFixed(2)}</p>
-                      </div>
-                      <Plus className="w-4 h-4 text-slate-300 group-hover:text-teal-500 transition-colors" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Current Order Summary */}
-            <div className="p-4 border-t border-slate-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-              <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center justify-between">
-                <span>New Order ({cart.length})</span>
-                {cart.length > 0 && <span className="text-teal-600">₹{cart.reduce((s, i) => s + (i.price * i.qty), 0).toFixed(2)}</span>}
-              </h3>
-
-              {cart.length === 0 ? (
-                <div className="text-sm text-center text-slate-500 py-4 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                  Tap items above to add to order
-                </div>
-              ) : (
-                <div className="max-h-32 overflow-y-auto mb-4 space-y-2 pr-1">
-                  {cart.map(item => (
-                    <div key={item.id} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900">{item.qty}x</span>
-                        <span className="text-slate-700">{item.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-slate-900">₹{(item.price * item.qty).toFixed(2)}</span>
-                        <button onClick={() => removeFromCart(item.id)} className="text-rose-400 hover:text-rose-600">
-                          <X className="w-4 h-4" />
+            {!activeOrder || isEditing ? (
+              <>
+                <div className="flex-1 overflow-y-auto bg-slate-50/30 p-4 space-y-6">
+                  {/* Quick Menu Selection */}
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">
+                      {isEditing ? 'Add Items to Order' : 'Quick Menu'}
+                    </h3>
+                    <div className="space-y-2">
+                      {menuItems.map(item => (
+                        <button
+                          key={item.id}
+                          onClick={() => addToCart(item)}
+                          className="w-full text-left bg-white p-3 rounded-lg border border-slate-200 hover:border-teal-500 hover:shadow-sm transition-all flex items-center justify-between group"
+                        >
+                          <div>
+                            <p className="font-bold text-slate-900 text-sm">{item.name}</p>
+                            <p className="text-xs text-slate-500">₹{item.price.toFixed(2)}</p>
+                          </div>
+                          <Plus className="w-4 h-4 text-slate-300 group-hover:text-teal-500 transition-colors" />
                         </button>
-                      </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
-              )}
 
-              <button
-                onClick={handlePlaceOrder}
-                disabled={cart.length === 0}
-                className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${cart.length > 0
-                  ? 'bg-teal-600 text-white hover:bg-teal-700 shadow-md shadow-teal-600/20'
-                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  }`}
-              >
-                Send to Kitchen <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
+                {/* Current Order Summary */}
+                <div className="p-4 border-t border-slate-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                  <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center justify-between">
+                    <span>{isEditing ? 'Editing Order' : 'New Order'} ({cart.length})</span>
+                    {cart.length > 0 && <span className="text-teal-600">₹{cart.reduce((s, i) => s + (i.price * i.qty), 0).toFixed(2)}</span>}
+                  </h3>
+
+                  {cart.length === 0 ? (
+                    <div className="text-sm text-center text-slate-500 py-4 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                      Tap items above to add to order
+                    </div>
+                  ) : (
+                    <div className="max-h-32 overflow-y-auto mb-4 space-y-2 pr-1">
+                      {cart.map(item => (
+                        <div key={item.id} className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900">{item.qty}x</span>
+                            <span className="text-slate-700">{item.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-slate-900">₹{(item.price * item.qty).toFixed(2)}</span>
+                            <button onClick={() => removeFromCart(item.id)} className="text-rose-400 hover:text-rose-600">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {isEditing ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setIsEditing(false); setCart([]); }}
+                        className="py-3.5 px-4 rounded-xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-800 transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleUpdateOrder}
+                        disabled={cart.length === 0}
+                        className={`flex-1 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${cart.length > 0
+                          ? 'bg-teal-600 text-white hover:bg-teal-700 shadow-md shadow-teal-600/20'
+                          : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                          }`}
+                      >
+                        Save Changes <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handlePlaceOrder}
+                      disabled={cart.length === 0}
+                      className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${cart.length > 0
+                        ? 'bg-teal-600 text-white hover:bg-teal-700 shadow-md shadow-teal-600/20'
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        }`}
+                    >
+                      Send to Kitchen <ChevronRight className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Active Order View */}
+                <div className="flex-1 overflow-y-auto bg-slate-50/30 p-5">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Order {activeOrder.id}</h3>
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${activeOrder.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                        activeOrder.status === 'cooking' ? 'bg-violet-100 text-violet-700' :
+                          activeOrder.status === 'ready' ? 'bg-emerald-100 text-emerald-700' :
+                            'bg-slate-100 text-slate-700'
+                      }`}>
+                      {activeOrder.status.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 mb-6">
+                    {activeOrder.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-lg">{item.qty}x</span>
+                          <div>
+                            <p className="font-bold text-slate-900 leading-tight">{item.name}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">₹{item.price.toFixed(2)} each</p>
+                          </div>
+                        </div>
+                        <div className="font-black text-slate-900 text-lg">
+                          ₹{(item.price * item.qty).toFixed(2)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-between items-center p-4 bg-white rounded-xl border border-slate-200 mb-6 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]">
+                    <span className="font-bold text-slate-700">Total Amount</span>
+                    <span className="text-2xl font-black text-teal-600">₹{activeOrder.total.toFixed(2)}</span>
+                  </div>
+
+                  {activeOrder.status !== 'paid' && (
+                    <div className="grid grid-cols-2 gap-3 mt-auto">
+                      <button
+                        onClick={handleEditClick}
+                        className="flex items-center justify-center gap-2 py-3.5 bg-white border-2 border-slate-200 hover:border-slate-300 text-slate-700 font-bold rounded-xl transition-colors shadow-sm"
+                      >
+                        <Pencil className="w-4 h-4" /> Edit Order
+                      </button>
+                      <button
+                        onClick={handleCancelOrder}
+                        className="flex items-center justify-center gap-2 py-3.5 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 font-bold rounded-xl transition-colors shadow-sm"
+                      >
+                        <Ban className="w-4 h-4" /> Cancel Order
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

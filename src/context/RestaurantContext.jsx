@@ -8,49 +8,51 @@ export const useRestaurant = () => useContext(RestaurantContext);
 const generateId = () => '#' + Math.floor(1000 + Math.random() * 9000);
 
 export function RestaurantProvider({ children }) {
+  const [userRole, setUserRole] = useState(null); // 'admin', 'kitchen', 'waiter'
+
   // Initial dummy tables
   const [tables, setTables] = useState([
     { id: 'T-01', status: 'free', capacity: 2, currentOrder: null },
     { id: 'T-02', status: 'occupied', capacity: 4, currentOrder: null },
-    { id: 'T-03', status: 'ordered', capacity: 4, currentOrder: null }, // Will populate on mount
+    { id: 'T-03', status: 'ordered', capacity: 4, currentOrder: '#1234' }, // Will pop on mount
     { id: 'T-04', status: 'free', capacity: 6, currentOrder: null },
-    { id: 'T-05', status: 'cooking', capacity: 2, currentOrder: null },
+    { id: 'T-05', status: 'cooking', capacity: 2, currentOrder: '#5678' },
     { id: 'T-06', status: 'free', capacity: 4, currentOrder: null },
-    { id: 'T-07', status: 'paying', capacity: 8, currentOrder: null },
+    { id: 'T-07', status: 'paying', capacity: 8, currentOrder: '#9012' },
     { id: 'T-08', status: 'free', capacity: 2, currentOrder: null },
   ]);
 
   // Initial dummy orders (Kitchen & Admin perspective)
   const [orders, setOrders] = useState([
     {
-      id: generateId(),
+      id: '#1234',
       tableId: 'T-03',
       status: 'pending', // pending, cooking, ready, billed, paid
       time: '12:30 PM',
       items: [
-        { name: 'Paneer Tikka', qty: 2, price: 350.00 },
-        { name: 'Garlic Naan', qty: 1, price: 80.00 }
+        { id: 1, name: 'Paneer Tikka', qty: 2, price: 350.00 },
+        { id: 4, name: 'Garlic Naan', qty: 1, price: 80.00 }
       ],
       total: 780.00
     },
     {
-      id: generateId(),
+      id: '#5678',
       tableId: 'T-05',
       status: 'cooking',
       time: '12:15 PM',
       items: [
-        { name: 'Butter Chicken', qty: 1, price: 450.00, notes: 'Spicy' }
+        { id: 2, name: 'Butter Chicken', qty: 1, price: 450.00, notes: 'Spicy' }
       ],
       total: 450.00
     },
     {
-      id: generateId(),
+      id: '#9012',
       tableId: 'T-07',
       status: 'ready', // ready for billing/serving
       time: '11:45 AM',
       items: [
-        { name: 'Mutton Biryani', qty: 2, price: 550.00 },
-        { name: 'Sweet Lassi', qty: 2, price: 120.00 }
+        { id: 3, name: 'Mutton Biryani', qty: 2, price: 550.00 },
+        { id: 7, name: 'Sweet Lassi', qty: 2, price: 120.00 }
       ],
       total: 1340.00
     }
@@ -99,16 +101,45 @@ export function RestaurantProvider({ children }) {
     }
   };
 
-  const updateTableStatus = (tableId, status) => {
-    setTables(prev => prev.map(t => t.id === tableId ? { ...t, status } : t));
+  const updateTableStatus = (tableId, status, currentOrder = undefined) => {
+    setTables(prev => prev.map(t => {
+      if (t.id === tableId) {
+        return { ...t, status, ...(currentOrder !== undefined && { currentOrder }) };
+      }
+      return t;
+    }));
   };
 
   const calculateTableBill = (tableId) => {
-    const tableOrders = orders.filter(o => o.tableId === tableId && (o.status !== 'paid'));
+    const tableOrders = orders.filter(o => o.tableId === tableId && (o.status !== 'paid' && o.status !== 'cancelled'));
     return tableOrders.reduce((sum, order) => sum + order.total, 0);
   };
 
+  const cancelOrder = (orderId) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      updateTableStatus(order.tableId, 'free', null);
+    }
+  };
+
+  const updateOrderItems = (orderId, newItems) => {
+    const total = newItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, items: newItems, total } : o));
+  };
+
+  const login = (role) => {
+    setUserRole(role);
+  };
+
+  const logout = () => {
+    setUserRole(null);
+  };
+
   const value = {
+    userRole,
+    login,
+    logout,
     tables,
     orders,
     getMenuItems,
@@ -116,6 +147,8 @@ export function RestaurantProvider({ children }) {
     updateOrderStatus,
     updateTableStatus,
     calculateTableBill,
+    cancelOrder,
+    updateOrderItems
   };
 
   return (

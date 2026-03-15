@@ -1,13 +1,25 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, ChefHat, UtensilsCrossed, LogOut } from 'lucide-react';
+import { useRestaurant } from '../../context/RestaurantContext';
 
 export default function Sidebar() {
+  const { userRole, logout } = useRestaurant();
+  const navigate = useNavigate();
+
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Admin', path: '/admin', icon: Users },
-    { name: 'Kitchen (KDS)', path: '/kds', icon: ChefHat },
-    { name: 'Waiter Tab', path: '/waiter', icon: UtensilsCrossed },
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['admin'] },
+    { name: 'Admin', path: '/admin', icon: Users, roles: ['admin'] },
+    { name: 'Kitchen (KDS)', path: '/kds', icon: ChefHat, roles: ['admin', 'kitchen'] },
+    { name: 'Waiter Tab', path: '/waiter', icon: UtensilsCrossed, roles: ['admin', 'waiter'] },
   ];
+
+  const filteredNavItems = navItems.filter(item => !userRole || item.roles.includes(userRole));
+
+  const handleLogout = (e) => {
+    e.preventDefault();
+    logout();
+    navigate('/');
+  };
 
   return (
     <div className="flex flex-col w-64 bg-white border-r border-slate-200 min-h-screen">
@@ -19,7 +31,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 px-4 py-6 space-y-2">
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
@@ -40,13 +52,13 @@ export default function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-slate-200">
-        <NavLink
-          to="/"
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-colors"
         >
           <LogOut className="w-5 h-5" />
           Exit to Website
-        </NavLink>
+        </button>
       </div>
     </div>
   );

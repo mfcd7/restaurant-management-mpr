@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ChefHat, ArrowRight } from 'lucide-react';
+import { ChefHat, ArrowRight, Shield, UtensilsCrossed, Utensils } from 'lucide-react';
+import { useRestaurant } from '../context/RestaurantContext';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [role, setRole] = useState('admin');
   const navigate = useNavigate();
+  const { login } = useRestaurant();
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // Dummy login: redirect directly to dashboard
-    navigate('/dashboard');
+    login(role);
+    if (role === 'admin') navigate('/admin');
+    else if (role === 'waiter') navigate('/waiter');
+    else if (role === 'kitchen') navigate('/kds');
+    else navigate('/dashboard');
   };
 
   return (
@@ -22,91 +26,69 @@ export default function LoginPage() {
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-black text-slate-900 tracking-tight">
-          Sign in to your account
+          Sign in to RMS Pro
         </h2>
-        {/* <p className="mt-2 text-center text-sm text-slate-600">
-          Or{' '}
-          <a href="#" className="font-bold text-indigo-600 hover:text-indigo-500 transition-colors">
-            start your 14-day free trial
-          </a>
-        </p> */}
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-sm border border-slate-200 sm:rounded-2xl sm:px-10">
           <form className="space-y-6" onSubmit={handleLogin}>
+            
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-                Email address
+              <label className="block text-sm font-medium text-slate-700 mb-3 text-center">
+                Select your role
               </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 sm:text-sm transition-shadow"
-                  placeholder="you@example.com"
-                />
-              </div>
-            </div>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRole('admin')}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
+                    role === 'admin' 
+                      ? 'border-indigo-600 bg-indigo-50 text-indigo-700' 
+                      : 'border-slate-200 hover:border-indigo-300 text-slate-500'
+                  }`}
+                >
+                  <Shield className="w-6 h-6 mb-1" />
+                  <span className="text-xs font-bold">Admin</span>
+                </button>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 sm:text-sm transition-shadow"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => setRole('kitchen')}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
+                    role === 'kitchen' 
+                      ? 'border-rose-500 bg-rose-50 text-rose-700' 
+                      : 'border-slate-200 hover:border-rose-300 text-slate-500'
+                  }`}
+                >
+                  <Utensils className="w-6 h-6 mb-1" />
+                  <span className="text-xs font-bold">Kitchen</span>
+                </button>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-900">
-                  Remember me
-                </label>
-              </div>
-
-              <div className="text-sm">
-                <a href="#" className="font-bold text-indigo-600 hover:text-indigo-500 transition-colors">
-                  Forgot your password?
-                </a>
+                <button
+                  type="button"
+                  onClick={() => setRole('waiter')}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
+                    role === 'waiter' 
+                      ? 'border-teal-600 bg-teal-50 text-teal-700' 
+                      : 'border-slate-200 hover:border-teal-300 text-slate-500'
+                  }`}
+                >
+                  <UtensilsCrossed className="w-6 h-6 mb-1" />
+                  <span className="text-xs font-bold">Waiter</span>
+                </button>
               </div>
             </div>
 
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors mt-6"
               >
-                Sign in <ArrowRight className="w-4 h-4 ml-2" />
+                Sign in as {role.charAt(0).toUpperCase() + role.slice(1)} <ArrowRight className="w-4 h-4 ml-2" />
               </button>
             </div>
-
-            {/* <div className="mt-6 text-center">
-              <span className="text-xs text-slate-400 font-medium bg-slate-50 px-3 py-1 rounded border border-slate-200">
-                Dummy Auth: Any credentials will work
-              </span>
-            </div> */}
+            
           </form>
         </div>
       </div>
