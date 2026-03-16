@@ -1,15 +1,28 @@
-import { useState } from 'react';
-import { LineChart, BarChart3, Users, Settings, Database, Activity, Receipt, Send, CheckCircle2, ChefHat } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LineChart, BarChart3, Users, Settings, Database, Activity, Receipt, Send, CheckCircle2, ChefHat, MessageSquare, X } from 'lucide-react';
 import { useRestaurant } from '../context/RestaurantContext';
 import WaiterPage from './WaiterPage';
 import KDSPage from './KDSPage';
 
 export default function AdminPage() {
-  const { orders, updateOrderStatus } = useRestaurant();
+  const { orders, messages, updateOrderStatus } = useRestaurant();
   const [activeTab, setActiveTab] = useState('overview'); // overview, billing
+  const [showMessages, setShowMessages] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Only show orders that are 'ready' to be billed or 'paid'
   const billingOrders = orders.filter(o => o.status === 'ready' || o.status === 'paid');
+
+  const prevMessagesLength = React.useRef(messages.length);
+
+  useEffect(() => {
+    if (messages.length > prevMessagesLength.current) {
+      if (!showMessages) {
+        setUnreadCount(prev => prev + (messages.length - prevMessagesLength.current));
+      }
+    }
+    prevMessagesLength.current = messages.length;
+  }, [messages, showMessages]);
 
   const users = [
     { id: 1, name: 'Rahul Sharma', role: 'Manager', status: 'Active', lastLogin: '2 mins ago' },
@@ -26,7 +39,53 @@ export default function AdminPage() {
           <h1 className="text-2xl font-bold text-slate-900">Admin Console</h1>
           <p className="text-slate-500 mt-1">Manage users, view analytics, and process e-bills.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 relative">
+          <button 
+            onClick={() => {
+              setShowMessages(!showMessages);
+              if (!showMessages) setUnreadCount(0);
+            }}
+            className="relative flex items-center justify-center w-10 h-10 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
+          >
+            <MessageSquare className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+          
+          {showMessages && (
+            <div className="absolute top-12 right-12 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+              <div className="flex items-center justify-between p-3 border-b border-slate-200 bg-slate-50">
+                <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-indigo-600" />
+                  Messages
+                </h3>
+                <button onClick={() => setShowMessages(false)} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="max-h-64 overflow-y-auto p-3 space-y-3">
+                {messages.length === 0 ? (
+                  <p className="text-center text-slate-500 text-sm py-4">No messages yet</p>
+                ) : (
+                  messages.map((msg) => (
+                    <div key={msg.id} className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100/50">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-indigo-700">{msg.sender}</span>
+                        <span className="text-[10px] text-slate-500">
+                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-700">{msg.content}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
             <Database className="w-4 h-4" /> Export Data
           </button>

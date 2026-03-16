@@ -1,8 +1,10 @@
-import { Clock, CheckCircle2, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { Clock, CheckCircle2, ChevronRight, MessageSquare, Send } from 'lucide-react';
 import { useRestaurant } from '../context/RestaurantContext';
 
 export default function KDSPage({ embedded = false }) {
-  const { orders, updateOrderStatus } = useRestaurant();
+  const { orders, updateOrderStatus, sendMessage } = useRestaurant();
+  const [messageText, setMessageText] = useState('');
 
   // Filter orders for KDS
   const activeOrders = orders.filter(o => o.status === 'pending' || o.status === 'cooking');
@@ -21,6 +23,35 @@ export default function KDSPage({ embedded = false }) {
           <h1 className="text-2xl font-bold text-slate-900">Kitchen Display System</h1>
           <p className="text-slate-500 mt-1">Manage active orders and tickets from the Waiter app.</p>
         </div>
+        
+        {/* Messaging Section */}
+        <div className="flex-1 max-w-lg mx-8 flex gap-2">
+          <input 
+            type="text" 
+            placeholder="Broadcast message to admins & waiters..."
+            className="flex-1 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+            value={messageText}
+            onChange={(e) => setMessageText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && messageText.trim()) {
+                sendMessage('Kitchen', messageText.trim());
+                setMessageText('');
+              }
+            }}
+          />
+          <button 
+            onClick={() => {
+              if (messageText.trim()) {
+                sendMessage('Kitchen', messageText.trim());
+                setMessageText('');
+              }
+            }}
+            className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+
         <div className="flex gap-4">
           <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 shadow-sm">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>

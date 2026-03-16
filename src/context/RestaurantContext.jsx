@@ -1,4 +1,5 @@
-import { createContext, useState, useContext } from 'react';
+import { createContext, useState, useEffect, useContext } from 'react';
+import { supabase } from '../lib/supabase';
 
 const RestaurantContext = createContext();
 
@@ -9,54 +10,87 @@ const generateId = () => '#' + Math.floor(1000 + Math.random() * 9000);
 
 export function RestaurantProvider({ children }) {
   const [userRole, setUserRole] = useState(null); // 'admin', 'kitchen', 'waiter'
+  const [tables, setTables] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Initial dummy tables
-  const [tables, setTables] = useState([
-    { id: 'T-01', status: 'free', capacity: 2, currentOrder: null },
-    { id: 'T-02', status: 'occupied', capacity: 4, currentOrder: null },
-    { id: 'T-03', status: 'ordered', capacity: 4, currentOrder: '#1234' }, // Will pop on mount
-    { id: 'T-04', status: 'free', capacity: 6, currentOrder: null },
-    { id: 'T-05', status: 'cooking', capacity: 2, currentOrder: '#5678' },
-    { id: 'T-06', status: 'free', capacity: 4, currentOrder: null },
-    { id: 'T-07', status: 'paying', capacity: 8, currentOrder: '#9012' },
-    { id: 'T-08', status: 'free', capacity: 2, currentOrder: null },
-  ]);
-
-  // Initial dummy orders (Kitchen & Admin perspective)
-  const [orders, setOrders] = useState([
-    {
-      id: '#1234',
-      tableId: 'T-03',
-      status: 'pending', // pending, cooking, ready, billed, paid
-      time: '12:30 PM',
-      items: [
-        { id: 1, name: 'Paneer Tikka', qty: 2, price: 350.00 },
-        { id: 4, name: 'Garlic Naan', qty: 1, price: 80.00 }
-      ],
-      total: 780.00
-    },
-    {
-      id: '#5678',
-      tableId: 'T-05',
-      status: 'cooking',
-      time: '12:15 PM',
-      items: [
-        { id: 2, name: 'Butter Chicken', qty: 1, price: 450.00, notes: 'Spicy' }
-      ],
-      total: 450.00
-    },
-    {
-      id: '#9012',
-      tableId: 'T-07',
-      status: 'ready', // ready for billing/serving
-      time: '11:45 AM',
-      items: [
-        { id: 3, name: 'Mutton Biryani', qty: 2, price: 550.00 },
-        { id: 7, name: 'Sweet Lassi', qty: 2, price: 120.00 }
-      ],
-      total: 1340.00
+  const handleTableChange = (payload) => {
+    if (payload.eventType === 'INSERT') {
+      setTables(prev => [...prev, payload.new]);
+    } else if (payload.eventType === 'UPDATE') {
+      setTables(prev => prev.map(t => t.id === payload.new.id ? payload.new : t));
+    } else if (payload.eventType === 'DELETE') {
+      setTables(prev => prev.filter(t => t.id !== payload.old.id));
     }
-  ]);
+  };
+
+  const handleOrderChange = (payload) => {
+    const formattedOrder = { ...payload.new, tableId: payload.new.tableid };
+    if (payload.eventType === 'INSERT') {
+      setOrders(prev => [formattedOrder, ...prev]);
+    } else if (payload.eventType === 'UPDATE') {
+      setOrders(prev => prev.map(o => o.id === formattedOrder.id ? formattedOrder : o));
+    } else if (payload.eventType === 'DELETE') {
+      setOrders(prev => prev.filter(o => o.id !== payload.old.id));
+    }
+  };
+
+  const fetchInitialData = async () => {
+    setLoading(true);
+    
+    // Fetch tables
+    const { data: tablesData } = await supabase.from('tables').select('*');
+    if (tablesData) setTables(tablesData);
+    
+    // Fetch orders
+    const { data: ordersData } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (ordersData) {
+      setOrders(ordersData.map(o => ({ ...o, tableId: o.tableid })));
+    }
+
+    // Fetch messages
+    const { data: messagesData } = await supabase.from('messages').select('*').order('created_at', { ascending: true });
+    if (messagesData) setMessages(messagesData);
+
+    setLoading(false);
+  };
+
+  // Initial fetch and subscription setup
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchInitialData();
+
+    // Subscribe to realtime changes
+    const tablesSubscription = supabase
+      .channel('tables-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tables' }, (payload) => {
+        handleTableChange(payload);
+      })
+      .subscribe();
+
+    const ordersSubscription = supabase
+      .channel('orders-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        handleOrderChange(payload);
+      })
+      .subscribe();
+
+    const messagesSubscription = supabase
+      .channel('messages-channel')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+        setMessages(prev => [...prev, payload.new]);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(tablesSubscription);
+      supabase.removeChannel(ordersSubscription);
+      supabase.removeChannel(messagesSubscription);
+    };
+  }, []);
+
+
 
   const getMenuItems = () => [
     { id: 1, category: 'Mains', name: 'Paneer Tikka', price: 350.00 },
@@ -68,25 +102,37 @@ export function RestaurantProvider({ children }) {
     { id: 7, category: 'Drinks', name: 'Sweet Lassi', price: 120.00 },
   ];
 
-  const placeOrder = (tableId, items) => {
+  const placeOrder = async (tableId, items) => {
     const total = items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    const newOrderId = generateId();
+    
     const newOrder = {
-      id: generateId(),
-      tableId,
+      id: newOrderId,
+      tableid: tableId, // Supabase maps unquoted CamelCase to lowercase
       status: 'pending',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       items,
       total
     };
 
-    setOrders(prev => [newOrder, ...prev]);
-    setTables(prev => prev.map(t =>
-      t.id === tableId ? { ...t, status: 'ordered', currentOrder: newOrder.id } : t
-    ));
+    // Insert order to Supabase
+    const { error: orderError } = await supabase.from('orders').insert([newOrder]);
+    if (orderError) {
+      console.error("Error placing order", orderError);
+      return;
+    }
+
+    // Update table status in Supabase
+    await supabase.from('tables').update({ status: 'ordered', currentOrder: newOrderId }).eq('id', tableId);
   };
 
-  const updateOrderStatus = (orderId, newStatus) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+  const updateOrderStatus = async (orderId, newStatus) => {
+    // Update order status in Supabase
+    const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+    if(error) {
+       console.error("Error updating order", error);
+       return;
+    }
 
     // Auto-update table status based on order status
     const order = orders.find(o => o.id === orderId);
@@ -97,17 +143,20 @@ export function RestaurantProvider({ children }) {
     } else if (newStatus === 'ready') {
       updateTableStatus(order.tableId, 'paying'); // ready to serve and pay
     } else if (newStatus === 'paid') {
-      updateTableStatus(order.tableId, 'free');
+      updateTableStatus(order.tableId, 'free', null);
     }
   };
 
-  const updateTableStatus = (tableId, status, currentOrder = undefined) => {
-    setTables(prev => prev.map(t => {
-      if (t.id === tableId) {
-        return { ...t, status, ...(currentOrder !== undefined && { currentOrder }) };
-      }
-      return t;
-    }));
+  const updateTableStatus = async (tableId, status, currentOrder = undefined) => {
+    const updates = { status };
+    if (currentOrder !== undefined) {
+      updates.currentOrder = currentOrder;
+    }
+    
+    const { error } = await supabase.from('tables').update(updates).eq('id', tableId);
+    if (error) {
+       console.error("Error updating table", error);
+    }
   };
 
   const calculateTableBill = (tableId) => {
@@ -115,17 +164,32 @@ export function RestaurantProvider({ children }) {
     return tableOrders.reduce((sum, order) => sum + order.total, 0);
   };
 
-  const cancelOrder = (orderId) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
+  const cancelOrder = async (orderId) => {
+    const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId);
+    if (error) {
+       console.error("Error cancelling order", error);
+       return;
+    }
+
     const order = orders.find(o => o.id === orderId);
     if (order) {
       updateTableStatus(order.tableId, 'free', null);
     }
   };
 
-  const updateOrderItems = (orderId, newItems) => {
+  const updateOrderItems = async (orderId, newItems) => {
     const total = newItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, items: newItems, total } : o));
+    const { error } = await supabase.from('orders').update({ items: newItems, total }).eq('id', orderId);
+    if (error) {
+      console.error("Error updating order items", error);
+    }
+  };
+  
+  const sendMessage = async (sender, content) => {
+      const { error } = await supabase.from('messages').insert([{ sender, content }]);
+      if (error) {
+          console.error("Error sending message", error);
+      }
   };
 
   const login = (role) => {
@@ -142,13 +206,16 @@ export function RestaurantProvider({ children }) {
     logout,
     tables,
     orders,
+    messages,
+    loading,
     getMenuItems,
     placeOrder,
     updateOrderStatus,
     updateTableStatus,
     calculateTableBill,
     cancelOrder,
-    updateOrderItems
+    updateOrderItems,
+    sendMessage
   };
 
   return (
