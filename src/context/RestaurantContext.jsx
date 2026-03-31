@@ -16,10 +16,11 @@ export function RestaurantProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const handleTableChange = (payload) => {
+    const formattedTable = { ...payload.new, currentOrder: payload.new.currentorder };
     if (payload.eventType === 'INSERT') {
-      setTables(prev => [...prev, payload.new]);
+      setTables(prev => [...prev, formattedTable]);
     } else if (payload.eventType === 'UPDATE') {
-      setTables(prev => prev.map(t => t.id === payload.new.id ? payload.new : t));
+      setTables(prev => prev.map(t => t.id === formattedTable.id ? formattedTable : t));
     } else if (payload.eventType === 'DELETE') {
       setTables(prev => prev.filter(t => t.id !== payload.old.id));
     }
@@ -41,7 +42,9 @@ export function RestaurantProvider({ children }) {
     
     // Fetch tables
     const { data: tablesData } = await supabase.from('tables').select('*');
-    if (tablesData) setTables(tablesData);
+    if (tablesData) {
+      setTables(tablesData.map(t => ({ ...t, currentOrder: t.currentorder })));
+    }
     
     // Fetch orders
     const { data: ordersData } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
@@ -96,10 +99,16 @@ export function RestaurantProvider({ children }) {
     { id: 1, category: 'Mains', name: 'Paneer Tikka', price: 350.00 },
     { id: 2, category: 'Mains', name: 'Butter Chicken', price: 450.00 },
     { id: 3, category: 'Mains', name: 'Mutton Biryani', price: 550.00 },
-    { id: 4, category: 'Sides', name: 'Garlic Naan', price: 80.00 },
-    { id: 5, category: 'Sides', name: 'Masala Papad', price: 60.00 },
-    { id: 6, category: 'Drinks', name: 'Masala Chai', price: 50.00 },
-    { id: 7, category: 'Drinks', name: 'Sweet Lassi', price: 120.00 },
+    { id: 4, category: 'Mains', name: 'Dal Makhani', price: 280.00 },
+    { id: 5, category: 'Mains', name: 'Palak Paneer', price: 320.00 },
+    { id: 6, category: 'Sides', name: 'Garlic Naan', price: 80.00 },
+    { id: 7, category: 'Sides', name: 'Tandoori Roti', price: 40.00 },
+    { id: 8, category: 'Sides', name: 'Lachha Paratha', price: 60.00 },
+    { id: 9, category: 'Sides', name: 'Aloo Paratha', price: 90.00 },
+    { id: 10, category: 'Sides', name: 'Masala Papad', price: 60.00 },
+    { id: 11, category: 'Drinks', name: 'Masala Chai', price: 50.00 },
+    { id: 12, category: 'Drinks', name: 'Sweet Lassi', price: 120.00 },
+    { id: 13, category: 'Drinks', name: 'Cold Coffee', price: 150.00 },
   ];
 
   const placeOrder = async (tableId, items) => {
@@ -123,7 +132,7 @@ export function RestaurantProvider({ children }) {
     }
 
     // Update table status in Supabase
-    await supabase.from('tables').update({ status: 'ordered', currentOrder: newOrderId }).eq('id', tableId);
+    await supabase.from('tables').update({ status: 'ordered', currentorder: newOrderId }).eq('id', tableId);
   };
 
   const updateOrderStatus = async (orderId, newStatus) => {
@@ -150,7 +159,7 @@ export function RestaurantProvider({ children }) {
   const updateTableStatus = async (tableId, status, currentOrder = undefined) => {
     const updates = { status };
     if (currentOrder !== undefined) {
-      updates.currentOrder = currentOrder;
+      updates.currentorder = currentOrder; // Send as currentorder to match PostgreSQL
     }
     
     const { error } = await supabase.from('tables').update(updates).eq('id', tableId);
@@ -179,9 +188,15 @@ export function RestaurantProvider({ children }) {
 
   const updateOrderItems = async (orderId, newItems) => {
     const total = newItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    const { error } = await supabase.from('orders').update({ items: newItems, total }).eq('id', orderId);
+    const { error } = await supabase.from('orders').update({ items: newItems, total, status: 'pending' }).eq('id', orderId);
     if (error) {
       console.error("Error updating order items", error);
+      return;
+    }
+
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      updateTableStatus(order.tableId, 'ordered', order.id);
     }
   };
   

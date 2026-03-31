@@ -7,7 +7,6 @@ export default function Sidebar() {
   const navigate = useNavigate();
 
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['admin'] },
     { name: 'Admin', path: '/admin', icon: Users, roles: ['admin'] },
     { name: 'Kitchen (KDS)', path: '/kds', icon: ChefHat, roles: ['admin', 'kitchen'] },
     { name: 'Waiter Tab', path: '/waiter', icon: UtensilsCrossed, roles: ['admin', 'waiter'] },

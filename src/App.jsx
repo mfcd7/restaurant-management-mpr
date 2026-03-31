@@ -1,17 +1,17 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
 import AdminPage from './pages/AdminPage';
 import KDSPage from './pages/KDSPage';
 import WaiterPage from './pages/WaiterPage';
+import ProtectedRoute from './components/layout/ProtectedRoute';
 import { RestaurantProvider } from './context/RestaurantContext';
 
 function App() {
   return (
     <RestaurantProvider>
-      <Router basename="/restaurant-management-mpr/">
+      <Router basename={import.meta.env.BASE_URL}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
@@ -19,11 +19,12 @@ function App() {
 
           {/* Internal Dashboard Routes */}
           <Route element={<Layout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/admin" element={<AdminPage />} />
-            <Route path="/kds" element={<KDSPage />} />
-            <Route path="/waiter" element={<WaiterPage />} />
+            <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminPage /></ProtectedRoute>} />
+            <Route path="/kds" element={<ProtectedRoute allowedRoles={['admin', 'kitchen']}><KDSPage /></ProtectedRoute>} />
+            <Route path="/waiter" element={<ProtectedRoute allowedRoles={['admin', 'waiter']}><WaiterPage /></ProtectedRoute>} />
           </Route>
+          
+          {/* Catch-all route mapping to home or login might also be good, but we leave it default for now */}
         </Routes>
       </Router>
     </RestaurantProvider>

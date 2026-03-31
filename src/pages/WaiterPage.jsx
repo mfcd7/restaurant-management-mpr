@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, Coffee, ChevronRight, Plus, X, Pencil, Ban, MessageSquare } from 'lucide-react';
+import { Users, Coffee, ChevronRight, Plus, X, Pencil, Ban, MessageSquare } from 'lucide-react';
 import { useRestaurant } from '../context/RestaurantContext';
 
 export default function WaiterPage({ embedded = false }) {
   const { tables, orders, messages, getMenuItems, placeOrder, calculateTableBill, cancelOrder, updateOrderItems } = useRestaurant();
-  const [activeTab, setActiveTab] = useState('all');
   const [activeTableId, setActiveTableId] = useState(null);
   const [cart, setCart] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -153,30 +152,13 @@ export default function WaiterPage({ embedded = false }) {
               </div>
             )}
             
-            <div className="relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search table..."
-                className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-shadow bg-white"
-              />
-            </div>
+            {/* Search removed as requested */}
           </div>
         </div>
 
-        <div className="flex gap-2 mb-6 border-b border-slate-200 pb-px">
-          {['All Tables', 'My Tables', 'Available', 'Needs Attention'].map((tab, i) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab.toLowerCase())}
-              className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${(activeTab === 'all' && i === 0) || activeTab === tab.toLowerCase()
-                ? 'border-teal-600 text-teal-600'
-                : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'
-                }`}
-            >
-              {tab}
-            </button>
-          ))}
+        <div className="mb-4">
+           {/* Removed unnecessary tabs */}
+           <h2 className="text-lg font-bold text-slate-800">All Tables</h2>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 flex-1 overflow-y-auto pb-4 pr-2">
@@ -184,7 +166,7 @@ export default function WaiterPage({ embedded = false }) {
             <button
               key={table.id}
               onClick={() => handleTableClick(table.id)}
-              className={`p-4 rounded-xl border text-left flex flex-col justify-between h-40 transition-all active:scale-[0.98] ${getStatusStyle(table.status)} ${activeTableId === table.id ? 'ring-2 ring-teal-500 ring-offset-2' : ''
+              className={`p-4 rounded-xl border text-left flex flex-col justify-between h-40 transition-all active:scale-[0.98] relative ${getStatusStyle(table.status)} ${activeTableId === table.id ? 'ring-2 ring-inset ring-teal-500 border-transparent shadow-md' : ''
                 }`}
             >
               <div className="flex justify-between items-start">
@@ -311,7 +293,7 @@ export default function WaiterPage({ embedded = false }) {
                           : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                           }`}
                       >
-                        Save Changes <ChevronRight className="w-5 h-5" />
+                        Update & Send to Kitchen <ChevronRight className="w-5 h-5" />
                       </button>
                     </div>
                   ) : (

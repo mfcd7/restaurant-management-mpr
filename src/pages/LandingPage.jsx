@@ -37,7 +37,7 @@ export default function LandingPage() {
           <Link to="/login" className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white rounded-xl font-bold text-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">
             Start free trial <ArrowRight className="w-5 h-5" />
           </Link>
-          <Link to="/dashboard" className="w-full sm:w-auto px-8 py-4 bg-white text-slate-900 border border-slate-200 rounded-xl font-bold text-lg hover:bg-slate-50 transition-colors">
+          <Link to="/login" className="w-full sm:w-auto px-8 py-4 bg-white text-slate-900 border border-slate-200 rounded-xl font-bold text-lg hover:bg-slate-50 transition-colors">
             View Live Demo
           </Link>
         </div>

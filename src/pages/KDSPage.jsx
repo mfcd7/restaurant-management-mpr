@@ -64,8 +64,8 @@ export default function KDSPage({ embedded = false }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-x-auto pb-4">
-        <div className="flex gap-6 h-full items-start w-max">
+      <div className="flex-1 overflow-y-auto pb-4 pr-2">
+        <div className="flex flex-wrap gap-6 items-start h-full content-start">
           {activeOrders.length === 0 && (
             <div className="flex items-center justify-center w-[80vw] h-64 text-slate-400 font-medium text-xl">
               No active orders right now.

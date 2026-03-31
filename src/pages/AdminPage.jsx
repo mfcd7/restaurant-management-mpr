@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, BarChart3, Users, Settings, Database, Activity, Receipt, Send, CheckCircle2, ChefHat, MessageSquare, X } from 'lucide-react';
+import { LineChart, BarChart3, Users, Settings, Database, Activity, Receipt, Send, CheckCircle2, ChefHat, MessageSquare, X, TrendingUp, IndianRupee, ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
 import { useRestaurant } from '../context/RestaurantContext';
 import WaiterPage from './WaiterPage';
 import KDSPage from './KDSPage';
@@ -138,37 +138,32 @@ export default function AdminPage() {
         {activeTab === 'overview' ? (
           <>
             {/* Overview Tab Content */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow">
-                <div className="p-3 bg-teal-50 text-teal-600 rounded-xl">
-                  <Users className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Total Staff</p>
-                  <h3 className="text-3xl font-black text-slate-900 mt-1">24</h3>
-                  <p className="text-xs text-emerald-600 font-bold mt-1 bg-emerald-50 px-2 py-0.5 rounded inline-block">+2 this month</p>
-                </div>
-              </div>
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow">
-                <div className="p-3 bg-violet-50 text-violet-600 rounded-xl">
-                  <LineChart className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">System Uptime</p>
-                  <h3 className="text-3xl font-black text-slate-900 mt-1">99.9%</h3>
-                  <p className="text-xs text-emerald-600 font-bold mt-1 bg-emerald-50 px-2 py-0.5 rounded inline-block">All systems go</p>
-                </div>
-              </div>
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow">
-                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-                  <Activity className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">API Requests</p>
-                  <h3 className="text-3xl font-black text-slate-900 mt-1">1.2M</h3>
-                  <p className="text-xs text-slate-500 font-bold mt-1 bg-slate-100 px-2 py-0.5 rounded inline-block">Last 30 days</p>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { name: 'Today\'s Revenue', value: '₹42,890', change: '+12.5%', positive: true, icon: IndianRupee },
+                { name: 'Active Orders', value: '42', change: '+5.2%', positive: true, icon: Clock },
+                { name: 'Served Customers', value: '184', change: '-2.4%', positive: false, icon: Users },
+                { name: 'Average Ticket', value: '₹850', change: '+8.1%', positive: true, icon: TrendingUp },
+              ].map((stat) => {
+                const Icon = stat.icon;
+                return (
+                  <div key={stat.name} className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 rounded-lg bg-indigo-50 text-indigo-600">
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      <div className={`flex items-center gap-1 text-sm font-medium ${stat.positive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {stat.positive ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                        {stat.change}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-bold text-slate-900 mb-1">{stat.value}</h3>
+                      <p className="text-sm text-slate-500 font-medium">{stat.name}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
