@@ -25,12 +25,12 @@ export default function WaiterPage({ embedded = false }) {
 
   const getStatusStyle = (status) => {
     switch (status) {
-      case 'free': return 'bg-white border-slate-200 hover:border-teal-500';
-      case 'occupied': return 'bg-amber-50 border-amber-300 shadow-sm';
-      case 'cooking': return 'bg-violet-50 border-violet-300 shadow-sm';
-      case 'ordered': return 'bg-indigo-50 border-indigo-300 shadow-sm';
-      case 'paying': return 'bg-emerald-50 border-emerald-300 shadow-sm';
-      default: return 'bg-white border-slate-200';
+      case 'free': return 'bg-white/80 backdrop-blur-md border-white/50 hover:border-teal-500 shadow-sm';
+      case 'occupied': return 'bg-amber-50/80 backdrop-blur-md border-amber-300 shadow-sm';
+      case 'cooking': return 'bg-violet-50/80 backdrop-blur-md border-violet-300 shadow-sm';
+      case 'ordered': return 'bg-indigo-50/80 backdrop-blur-md border-indigo-300 shadow-sm';
+      case 'paying': return 'bg-emerald-50/80 backdrop-blur-md border-emerald-300 shadow-sm';
+      default: return 'bg-white/80 backdrop-blur-md border-white/50';
     }
   };
 
@@ -60,12 +60,16 @@ export default function WaiterPage({ embedded = false }) {
       if (existing) {
         return prev.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i);
       }
-      return [...prev, { ...item, qty: 1 }];
+      return [...prev, { ...item, qty: 1, notes: '' }];
     });
   };
 
   const removeFromCart = (id) => {
     setCart(prev => prev.filter(i => i.id !== id));
+  };
+  
+  const updateItemNote = (id, note) => {
+    setCart(prev => prev.map(i => i.id === id ? { ...i, notes: note } : i));
   };
 
   const handlePlaceOrder = () => {
@@ -98,11 +102,11 @@ export default function WaiterPage({ embedded = false }) {
 
   return (
     <div className={`p-8 max-w-[1400px] mx-auto flex gap-8 ${embedded ? 'h-full' : 'h-screen'}`}>
-      <div className="flex-1 flex flex-col">
-        <div className="flex items-center justify-between mb-8">
+      <div className="flex-1 flex flex-col relative z-50">
+        <div className="w-full bg-white/80 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/50 shadow-sm flex items-center justify-between mb-8 relative z-[60]">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Floor Plan</h1>
-            <p className="text-slate-500 mt-1">Manage tables and take orders.</p>
+            <h1 className="text-2xl font-bold text-slate-900 leading-tight">Floor Plan</h1>
+            <p className="text-slate-500 font-medium text-sm mt-0.5">Manage tables and take orders.</p>
           </div>
 
           <div className="flex items-center gap-4 relative">
@@ -122,13 +126,13 @@ export default function WaiterPage({ embedded = false }) {
             </button>
             
             {showMessages && (
-              <div className="absolute top-12 right-0 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+              <div className="absolute top-12 left-0 md:left-auto md:right-0 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 z-[100] overflow-hidden">
                 <div className="flex items-center justify-between p-3 border-b border-slate-200 bg-slate-50">
                   <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-teal-600" />
                     Kitchen Messages
                   </h3>
-                  <button onClick={() => setShowMessages(false)} className="text-slate-400 hover:text-slate-600">
+                  <button onClick={() => setShowMessages(false)} className="text-slate-400 hover:text-slate-600 bg-white rounded-md p-1 border border-slate-200">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
@@ -162,7 +166,7 @@ export default function WaiterPage({ embedded = false }) {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 flex-1 overflow-y-auto pb-4 pr-2">
-          {tables.map(table => (
+          {tables.filter(t => t.id.startsWith('T-')).map(table => (
             <button
               key={table.id}
               onClick={() => handleTableClick(table.id)}
@@ -199,16 +203,16 @@ export default function WaiterPage({ embedded = false }) {
       </div>
 
       {/* Right Sidebar - Action Panel */}
-      <div className="w-96 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col h-[calc(100vh-4rem)] overflow-hidden flex-shrink-0">
+      <div className="relative z-10 w-96 bg-white/80 backdrop-blur-md border border-white/50 rounded-2xl shadow-sm flex flex-col h-[calc(100vh-4rem)] overflow-hidden flex-shrink-0">
         {!activeTable ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-400 bg-slate-50/50">
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-400 bg-white/40">
             <Coffee className="w-16 h-16 mb-4 text-slate-200" />
             <p className="font-medium text-slate-600 text-lg">No table selected</p>
             <p className="text-sm mt-2 max-w-[200px]">Tap a table on the floor plan to view details and start an order</p>
           </div>
         ) : (
           <>
-            <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+            <div className="p-5 border-b border-white/50 bg-white/60 flex items-center justify-between shrink-0">
               <div>
                 <h2 className="font-bold text-xl text-slate-900">Table {activeTable.id.replace('T-', '')}</h2>
                 <span className={`text-xs font-bold uppercase tracking-wider mt-1 ${activeTable.status === 'free' ? 'text-slate-500' : 'text-teal-600'
@@ -248,29 +252,52 @@ export default function WaiterPage({ embedded = false }) {
                 </div>
 
                 {/* Current Order Summary */}
-                <div className="p-4 border-t border-slate-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                  <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center justify-between">
+                <div className="p-4 border-t border-white/50 bg-white/60 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] shrink-0 flex flex-col max-h-[50vh]">
+                  <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center justify-between shrink-0">
                     <span>{isEditing ? 'Editing Order' : 'New Order'} ({cart.length})</span>
                     {cart.length > 0 && <span className="text-teal-600">₹{cart.reduce((s, i) => s + (i.price * i.qty), 0).toFixed(2)}</span>}
                   </h3>
 
                   {cart.length === 0 ? (
-                    <div className="text-sm text-center text-slate-500 py-4 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                    <div className="text-sm text-center text-slate-500 py-4 bg-slate-50 rounded-lg border border-dashed border-slate-200 shrink-0">
                       Tap items above to add to order
                     </div>
                   ) : (
-                    <div className="max-h-32 overflow-y-auto mb-4 space-y-2 pr-1">
+                    <div className="flex-1 overflow-y-auto mb-4 space-y-3 pr-1 min-h-[100px]">
                       {cart.map(item => (
-                        <div key={item.id} className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900">{item.qty}x</span>
-                            <span className="text-slate-700">{item.name}</span>
+                        <div key={item.id} className="flex flex-col gap-2 p-2.5 bg-white border border-slate-100 rounded-lg shadow-sm">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900 bg-slate-100 px-1.5 rounded">{item.qty}x</span>
+                              <span className="text-slate-700 font-bold">{item.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-slate-900">₹{(item.price * item.qty).toFixed(2)}</span>
+                              <button onClick={() => removeFromCart(item.id)} className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-1 rounded transition-colors">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-slate-900">₹{(item.price * item.qty).toFixed(2)}</span>
-                            <button onClick={() => removeFromCart(item.id)} className="text-rose-400 hover:text-rose-600">
-                              <X className="w-4 h-4" />
-                            </button>
+                          <div className="flex gap-2">
+                            <input 
+                              type="text" 
+                              placeholder="Add special request... (e.g. less spicy)"
+                              className="flex-1 text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-colors"
+                              value={item.notes || ''}
+                              onChange={(e) => updateItemNote(item.id, e.target.value)}
+                            />
+                          </div>
+                          {/* Quick note buttons */}
+                          <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar">
+                            {["Less Spicy", "Extra Cheese", "No Onions", "Extra Spicy"].map(quickNote => (
+                              <button 
+                                key={quickNote}
+                                onClick={() => updateItemNote(item.id, item.notes ? `${item.notes}, ${quickNote}` : quickNote)}
+                                className="shrink-0 text-[10px] font-bold px-2 py-1 bg-white border border-slate-200 text-slate-500 rounded-full hover:border-teal-400 hover:text-teal-600 transition-colors whitespace-nowrap"
+                              >
+                                + {quickNote}
+                              </button>
+                            ))}
                           </div>
                         </div>
                       ))}
@@ -278,7 +305,7 @@ export default function WaiterPage({ embedded = false }) {
                   )}
 
                   {isEditing ? (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0 pt-2 border-t border-slate-200">
                       <button
                         onClick={() => { setIsEditing(false); setCart([]); }}
                         className="py-3.5 px-4 rounded-xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-800 transition-all"
@@ -293,14 +320,14 @@ export default function WaiterPage({ embedded = false }) {
                           : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                           }`}
                       >
-                        Update & Send to Kitchen <ChevronRight className="w-5 h-5" />
+                        Update & Send <ChevronRight className="w-5 h-5" />
                       </button>
                     </div>
                   ) : (
                     <button
                       onClick={handlePlaceOrder}
                       disabled={cart.length === 0}
-                      className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${cart.length > 0
+                      className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shrink-0 mt-2 ${cart.length > 0
                         ? 'bg-teal-600 text-white hover:bg-teal-700 shadow-md shadow-teal-600/20'
                         : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                         }`}
@@ -314,7 +341,7 @@ export default function WaiterPage({ embedded = false }) {
               <>
                 {/* Active Order View */}
                 <div className="flex-1 overflow-y-auto bg-slate-50/30 p-5">
-                  <div className="mb-4 flex items-center justify-between">
+                  <div className="mb-4 flex items-center justify-between shrink-0">
                     <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Order {activeOrder.id}</h3>
                     <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${activeOrder.status === 'pending' ? 'bg-amber-100 text-amber-700' :
                         activeOrder.status === 'cooking' ? 'bg-violet-100 text-violet-700' :
@@ -327,28 +354,35 @@ export default function WaiterPage({ embedded = false }) {
 
                   <div className="space-y-3 mb-6">
                     {activeOrder.items.map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <span className="font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-lg">{item.qty}x</span>
-                          <div>
-                            <p className="font-bold text-slate-900 leading-tight">{item.name}</p>
-                            <p className="text-xs text-slate-500 mt-0.5">₹{item.price.toFixed(2)} each</p>
+                      <div key={idx} className="flex flex-col p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-lg">{item.qty}x</span>
+                            <div>
+                              <p className="font-bold text-slate-900 leading-tight">{item.name}</p>
+                              <p className="text-xs text-slate-500 mt-0.5">₹{item.price.toFixed(2)} each</p>
+                            </div>
+                          </div>
+                          <div className="font-black text-slate-900 text-lg">
+                            ₹{(item.price * item.qty).toFixed(2)}
                           </div>
                         </div>
-                        <div className="font-black text-slate-900 text-lg">
-                          ₹{(item.price * item.qty).toFixed(2)}
-                        </div>
+                        {item.notes && (
+                          <div className="mt-2 text-xs font-medium text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded disabled inline-block self-start border border-amber-100">
+                            Note: {item.notes}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
 
-                  <div className="flex justify-between items-center p-4 bg-white rounded-xl border border-slate-200 mb-6 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]">
+                  <div className="flex justify-between items-center p-4 bg-white rounded-xl border border-slate-200 mb-6 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] shrink-0">
                     <span className="font-bold text-slate-700">Total Amount</span>
                     <span className="text-2xl font-black text-teal-600">₹{activeOrder.total.toFixed(2)}</span>
                   </div>
 
                   {activeOrder.status !== 'paid' && (
-                    <div className="grid grid-cols-2 gap-3 mt-auto">
+                    <div className="grid grid-cols-2 gap-3 mt-auto shrink-0">
                       <button
                         onClick={handleEditClick}
                         className="flex items-center justify-center gap-2 py-3.5 bg-white border-2 border-slate-200 hover:border-slate-300 text-slate-700 font-bold rounded-xl transition-colors shadow-sm"

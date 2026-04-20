@@ -10,6 +10,7 @@ const generateId = () => '#' + Math.floor(1000 + Math.random() * 9000);
 
 export function RestaurantProvider({ children }) {
   const [userRole, setUserRole] = useState(null); // 'admin', 'kitchen', 'waiter'
+  const [authUser, setAuthUser] = useState(null);
   const [tables, setTables] = useState([]);
   const [orders, setOrders] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -61,6 +62,12 @@ export function RestaurantProvider({ children }) {
 
   // Initial fetch and subscription setup
   useEffect(() => {
+    // Local Auth Session setup
+    const savedUser = localStorage.getItem('restodash_user');
+    if (savedUser) {
+      setAuthUser(JSON.parse(savedUser));
+    }
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchInitialData();
 
@@ -135,6 +142,35 @@ export function RestaurantProvider({ children }) {
     await supabase.from('tables').update({ status: 'ordered', currentorder: newOrderId }).eq('id', tableId);
   };
 
+  const placeExternalOrder = async (orderType, items) => {
+    const total = items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    const newOrderId = generateId();
+    
+    // Create pseudo-table to fulfill DB constraints
+    await supabase.from('tables').insert([{
+      id: orderType,
+      capacity: 1,
+      status: 'ordered',
+      currentorder: newOrderId
+    }]);
+
+    // orderType will be "Takeaway #1234" or "Online Order #1234"
+    const newOrder = {
+      id: newOrderId,
+      tableid: orderType, // Treating this virtual id as the tableId equivalent
+      status: 'pending',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      items,
+      total
+    };
+
+    // Insert order to Supabase
+    const { error: orderError } = await supabase.from('orders').insert([newOrder]);
+    if (orderError) {
+      console.error("Error placing external order", orderError);
+    }
+  };
+
   const updateOrderStatus = async (orderId, newStatus) => {
     // Update order status in Supabase
     const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
@@ -152,7 +188,11 @@ export function RestaurantProvider({ children }) {
     } else if (newStatus === 'ready') {
       updateTableStatus(order.tableId, 'paying'); // ready to serve and pay
     } else if (newStatus === 'paid') {
-      updateTableStatus(order.tableId, 'free', null);
+      if (order.tableId.startsWith('Takeaway') || order.tableId.startsWith('Online')) {
+        supabase.from('tables').delete().eq('id', order.tableId).then();
+      } else {
+        updateTableStatus(order.tableId, 'free', null);
+      }
     }
   };
 
@@ -182,7 +222,11 @@ export function RestaurantProvider({ children }) {
 
     const order = orders.find(o => o.id === orderId);
     if (order) {
-      updateTableStatus(order.tableId, 'free', null);
+      if (order.tableId.startsWith('Takeaway') || order.tableId.startsWith('Online')) {
+        supabase.from('tables').delete().eq('id', order.tableId).then();
+      } else {
+        updateTableStatus(order.tableId, 'free', null);
+      }
     }
   };
 
@@ -215,16 +259,42 @@ export function RestaurantProvider({ children }) {
     setUserRole(null);
   };
 
+  const loginWithEmail = async (email, password) => {
+    // Mock local authentication
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (password === 'admin123') {
+          const userObj = { email };
+          localStorage.setItem('restodash_user', JSON.stringify(userObj));
+          setAuthUser(userObj);
+          resolve(userObj);
+        } else {
+          reject(new Error("Invalid login credentials. Did you use 'admin123'?"));
+        }
+      }, 500); // simulate tiny network delay
+    });
+  };
+
+  const logoutAuth = async () => {
+    localStorage.removeItem('restodash_user');
+    setAuthUser(null);
+    setUserRole(null);
+  };
+
   const value = {
     userRole,
+    authUser,
     login,
     logout,
+    loginWithEmail,
+    logoutAuth,
     tables,
     orders,
     messages,
     loading,
     getMenuItems,
     placeOrder,
+    placeExternalOrder,
     updateOrderStatus,
     updateTableStatus,
     calculateTableBill,

@@ -1,12 +1,11 @@
-import { useState } from 'react';
-import { Clock, CheckCircle2, ChevronRight, MessageSquare, Send } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChefHat, Clock, Send } from 'lucide-react';
 import { useRestaurant } from '../context/RestaurantContext';
 
 export default function KDSPage({ embedded = false }) {
   const { orders, updateOrderStatus, sendMessage } = useRestaurant();
   const [messageText, setMessageText] = useState('');
 
-  // Filter orders for KDS
   const activeOrders = orders.filter(o => o.status === 'pending' || o.status === 'cooking');
   const pendingCount = activeOrders.filter(t => t.status === 'pending').length;
   const cookingCount = activeOrders.filter(t => t.status === 'cooking').length;
@@ -18,10 +17,10 @@ export default function KDSPage({ embedded = false }) {
 
   return (
     <div className={`p-8 flex flex-col max-w-[1600px] mx-auto ${embedded ? 'h-full' : 'h-screen'}`}>
-      <div className="flex items-center justify-between mb-8">
+      <div className="w-full bg-white/80 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/50 shadow-sm flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Kitchen Display System</h1>
-          <p className="text-slate-500 mt-1">Manage active orders and tickets from the Waiter app.</p>
+          <h1 className="text-2xl font-bold text-slate-900 leading-tight">Kitchen Display System</h1>
+          <p className="text-slate-500 font-medium text-sm mt-0.5">Manage active orders and tickets from the Waiter app.</p>
         </div>
         
         {/* Messaging Section */}
@@ -64,6 +63,7 @@ export default function KDSPage({ embedded = false }) {
         </div>
       </div>
 
+      {/* Main Content */}
       <div className="flex-1 overflow-y-auto pb-4 pr-2">
         <div className="flex flex-wrap gap-6 items-start h-full content-start">
           {activeOrders.length === 0 && (
@@ -74,11 +74,11 @@ export default function KDSPage({ embedded = false }) {
           {activeOrders.map((ticket) => (
             <div
               key={ticket.id}
-              className={`w-80 flex flex-col bg-white rounded-2xl shadow-sm border-t-4 border-x border-b border-slate-200 shrink-0 ${ticket.status === 'pending' ? 'border-t-rose-500' : 'border-t-violet-500'
+              className={`w-80 flex flex-col bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border-t-4 border-x border-b border-white/50 shrink-0 ${ticket.status === 'pending' ? 'border-t-rose-500' : 'border-t-violet-500'
                 }`}
             >
               {/* Ticket Header */}
-              <div className="p-5 border-b border-slate-100 flex items-start justify-between bg-slate-50/50 rounded-t-xl">
+              <div className="p-5 border-b border-white/50 flex items-start justify-between bg-white/40 rounded-t-xl">
                 <div>
                   <h2 className="text-2xl font-black text-slate-900">{ticket.tableId}</h2>
                   <p className="text-sm font-medium text-slate-500">{ticket.id} • {ticket.time}</p>
@@ -108,7 +108,7 @@ export default function KDSPage({ embedded = false }) {
               </div>
 
               {/* Actions */}
-              <div className="p-5 border-t border-slate-100 mt-auto bg-slate-50/50 rounded-b-xl">
+              <div className="p-5 border-t border-white/50 mt-auto bg-white/40 rounded-b-xl">
                 <button
                   onClick={() => updateOrderStatus(ticket.id, ticket.status === 'pending' ? 'cooking' : 'ready')}
                   className={`w-full py-3.5 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 ${ticket.status === 'pending'
@@ -116,14 +116,8 @@ export default function KDSPage({ embedded = false }) {
                     : 'bg-emerald-500 hover:bg-emerald-600 shadow-md shadow-emerald-500/20'
                     }`}
                 >
-                  {ticket.status === 'pending' ? (
-                    <>Start Cooking <ChevronRight className="w-5 h-5" /></>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-5 h-5" />
-                      Mark Ready to Serve
-                    </>
-                  )}
+                  <ChefHat className="w-5 h-5" />
+                  {ticket.status === 'pending' ? 'Start Cooking' : 'Mark Ready'}
                 </button>
               </div>
             </div>

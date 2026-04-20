@@ -21,12 +21,12 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="flex flex-col w-64 bg-white border-r border-slate-200 min-h-screen">
-      <div className="flex items-center justify-center h-16 border-b border-slate-200 px-4">
-        <h1 className="text-xl font-bold text-indigo-600 flex items-center gap-2">
-          <ChefHat className="w-6 h-6" />
-          RMS Pro
-        </h1>
+    <div className="flex flex-col w-64 bg-white/80 backdrop-blur-md border-r border-slate-200/50 min-h-screen">
+      <div className="flex items-center justify-center pt-8 pb-6 border-b border-slate-200/50 px-4">
+        <div className="flex flex-col sm:flex-row items-center gap-2">
+          <img src="/logo.png" alt="RestoDash Logo" className="w-12 h-12 object-contain drop-shadow-md" />
+          <img src="/logo-text.png" alt="RestoDash" className="h-6 object-contain drop-shadow-sm hidden md:block" />
+        </div>
       </div>
 
       <nav className="flex-1 px-4 py-6 space-y-2">

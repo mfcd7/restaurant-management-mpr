@@ -7,10 +7,12 @@ import KDSPage from './pages/KDSPage';
 import WaiterPage from './pages/WaiterPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import { RestaurantProvider } from './context/RestaurantContext';
+import DynamicBackground from './components/layout/DynamicBackground';
 
 function App() {
   return (
     <RestaurantProvider>
+      <DynamicBackground />
       <Router basename={import.meta.env.BASE_URL}>
         <Routes>
           {/* Public Routes */}
