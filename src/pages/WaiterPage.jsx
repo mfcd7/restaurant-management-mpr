@@ -3,12 +3,18 @@ import { Users, Coffee, ChevronRight, Plus, X, Pencil, Ban, MessageSquare } from
 import { useRestaurant } from '../context/RestaurantContext';
 
 export default function WaiterPage({ embedded = false }) {
-  const { tables, orders, messages, getMenuItems, placeOrder, calculateTableBill, cancelOrder, updateOrderItems } = useRestaurant();
+  const { tables, orders, messages, getMenuItems, placeOrder, calculateTableBill, cancelOrder, updateOrderItems, updateOrderStatus } = useRestaurant();
   const [activeTableId, setActiveTableId] = useState(null);
   const [cart, setCart] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [currentTime, setCurrentTime] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const prevMessagesLength = React.useRef(messages.length);
 
@@ -38,11 +44,23 @@ export default function WaiterPage({ embedded = false }) {
     switch (status) {
       case 'free': return 'Available';
       case 'occupied': return 'Seated';
+      case 'buffer': return 'Grace Period';
+      case 'pending': return 'Sent to Kitchen';
       case 'ordered': return 'Waiting for Food';
       case 'cooking': return 'Food is Cooking';
+      case 'ready': return 'Ready to Serve';
+      case 'served': return 'Served - Eating';
       case 'paying': return 'Bill Requested / Paying';
       default: return status;
     }
+  };
+
+  const formatTimeRemaining = (targetTimeMs) => {
+    if (!targetTimeMs || targetTimeMs <= currentTime) return "00:00";
+    let diff = Math.floor((targetTimeMs - currentTime) / 1000);
+    const m = Math.floor(diff / 60);
+    const s = diff % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   const handleTableClick = (id) => {
@@ -97,6 +115,12 @@ export default function WaiterPage({ embedded = false }) {
       cancelOrder(activeOrder.id);
       setIsEditing(false);
       setCart([]);
+    }
+  };
+
+  const handleConfirmServed = () => {
+    if (activeOrder) {
+      updateOrderStatus(activeOrder.id, 'served');
     }
   };
 
@@ -343,14 +367,39 @@ export default function WaiterPage({ embedded = false }) {
                 <div className="flex-1 overflow-y-auto bg-slate-50/30 p-5">
                   <div className="mb-4 flex items-center justify-between shrink-0">
                     <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Order {activeOrder.id}</h3>
-                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${activeOrder.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                        activeOrder.status === 'cooking' ? 'bg-violet-100 text-violet-700' :
-                          activeOrder.status === 'ready' ? 'bg-emerald-100 text-emerald-700' :
-                            'bg-slate-100 text-slate-700'
-                      }`}>
-                      {activeOrder.status.toUpperCase()}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                       <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
+                           activeOrder.status === 'buffer' ? 'bg-slate-200 text-slate-600' :
+                           activeOrder.status === 'pending' ? 'bg-rose-100 text-rose-700' :
+                           activeOrder.status === 'cooking' ? 'bg-violet-100 text-violet-700' :
+                           activeOrder.status === 'ready' ? 'bg-emerald-100 text-emerald-700' :
+                           activeOrder.status === 'served' ? 'bg-teal-100 text-teal-700' :
+                           'bg-slate-100 text-slate-700'
+                         }`}>
+                         {getStatusText(activeOrder.status).toUpperCase()}
+                       </span>
+                       
+                       {activeOrder.status === 'buffer' && (
+                         <span className="text-xs font-bold text-slate-500">
+                           ⏳ Grace Time: {formatTimeRemaining(activeOrder.buffer_ends_at)}
+                         </span>
+                       )}
+                       
+                       {activeOrder.status === 'cooking' && (
+                         <span className={`text-xs font-bold ${activeOrder.cooking_ends_at <= currentTime ? 'text-rose-500 animate-pulse' : 'text-violet-600'}`}>
+                           Prep Timer: {formatTimeRemaining(activeOrder.cooking_ends_at)}
+                         </span>
+                       )}
+                    </div>
                   </div>
+
+                  {activeOrder.status === 'cooking' && activeOrder.cooking_ends_at <= currentTime && (
+                    <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg shadow-sm animate-pulse">
+                      <p className="text-sm font-bold text-amber-700 text-center">
+                        Almost done! Final confirmation pending from Kitchen.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="space-y-3 mb-6">
                     {activeOrder.items.map((item, idx) => (
@@ -381,7 +430,7 @@ export default function WaiterPage({ embedded = false }) {
                     <span className="text-2xl font-black text-teal-600">₹{activeOrder.total.toFixed(2)}</span>
                   </div>
 
-                  {activeOrder.status !== 'paid' && (
+                  {(activeOrder.status === 'buffer' || activeOrder.status === 'pending' || activeOrder.status === 'cooking') && (
                     <div className="grid grid-cols-2 gap-3 mt-auto shrink-0">
                       <button
                         onClick={handleEditClick}
@@ -396,6 +445,15 @@ export default function WaiterPage({ embedded = false }) {
                         <Ban className="w-4 h-4" /> Cancel Order
                       </button>
                     </div>
+                  )}
+
+                  {activeOrder.status === 'ready' && (
+                    <button
+                      onClick={handleConfirmServed}
+                      className="w-full mt-auto flex items-center justify-center gap-2 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all shadow-md shadow-emerald-500/20 ring-4 ring-emerald-500/30"
+                    >
+                      <ChevronRight className="w-5 h-5" /> Confirm Served to Table
+                    </button>
                   )}
                 </div>
               </>

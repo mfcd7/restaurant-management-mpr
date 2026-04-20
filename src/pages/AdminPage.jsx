@@ -44,8 +44,8 @@ export default function AdminPage() {
     { id: 5, name: 'Sneha Patel', role: 'Host', status: 'Active', lastLogin: '10 mins ago' },
   ]);
 
-  // Only show orders that are 'ready' to be billed or 'paid'
-  const billingOrders = orders.filter(o => o.status === 'ready' || o.status === 'paid');
+  // Only show orders that are 'served' to be billed or 'paid'
+  const billingOrders = orders.filter(o => o.status === 'served' || o.status === 'paid');
 
   const prevMessagesLength = React.useRef(messages.length);
 
@@ -415,7 +415,7 @@ export default function AdminPage() {
                 <div className="p-6 border-b border-slate-200/50 flex items-center justify-between bg-white/40">
                 <div>
                   <h2 className="font-bold text-slate-900 text-lg">Finalize Billing & Send E-Bills</h2>
-                  <p className="text-sm font-medium text-slate-500 mt-1">Orders marked as 'Ready to Serve' require billing action.</p>
+                  <p className="text-sm font-medium text-slate-500 mt-1">Orders marked as 'Served' require billing action.</p>
                 </div>
               </div>
 
@@ -423,7 +423,7 @@ export default function AdminPage() {
                 <div className="flex-1 flex flex-col items-center justify-center p-12 text-center text-slate-400">
                   <Receipt className="w-16 h-16 mb-4 text-slate-200" />
                   <p className="font-medium text-slate-600 text-lg">No orders ready for billing</p>
-                  <p className="text-sm mt-2">When the kitchen marks an order as ready, it will appear here.</p>
+                  <p className="text-sm mt-2">When the Waiter marks an order as served, it will appear here.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">

@@ -125,7 +125,8 @@ export function RestaurantProvider({ children }) {
     const newOrder = {
       id: newOrderId,
       tableid: tableId, // Supabase maps unquoted CamelCase to lowercase
-      status: 'pending',
+      status: 'buffer',
+      buffer_ends_at: Date.now() + 10000, // 2 minutes buffer
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       items,
       total
@@ -158,7 +159,8 @@ export function RestaurantProvider({ children }) {
     const newOrder = {
       id: newOrderId,
       tableid: orderType, // Treating this virtual id as the tableId equivalent
-      status: 'pending',
+      status: 'buffer',
+      buffer_ends_at: Date.now() + 10000,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       items,
       total
@@ -171,9 +173,9 @@ export function RestaurantProvider({ children }) {
     }
   };
 
-  const updateOrderStatus = async (orderId, newStatus) => {
+  const updateOrderStatus = async (orderId, newStatus, extra = {}) => {
     // Update order status in Supabase
-    const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+    const { error } = await supabase.from('orders').update({ status: newStatus, ...extra }).eq('id', orderId);
     if(error) {
        console.error("Error updating order", error);
        return;
@@ -186,7 +188,10 @@ export function RestaurantProvider({ children }) {
     if (newStatus === 'cooking') {
       updateTableStatus(order.tableId, 'cooking');
     } else if (newStatus === 'ready') {
-      updateTableStatus(order.tableId, 'paying'); // ready to serve and pay
+      // Table is still occupied but cooking is done
+      // You could update it to "ready" or just keep it "cooking" until served
+    } else if (newStatus === 'served') {
+      updateTableStatus(order.tableId, 'paying'); // ready for bill now
     } else if (newStatus === 'paid') {
       if (order.tableId.startsWith('Takeaway') || order.tableId.startsWith('Online')) {
         supabase.from('tables').delete().eq('id', order.tableId).then();
@@ -232,7 +237,8 @@ export function RestaurantProvider({ children }) {
 
   const updateOrderItems = async (orderId, newItems) => {
     const total = newItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    const { error } = await supabase.from('orders').update({ items: newItems, total, status: 'pending' }).eq('id', orderId);
+    // When editing, reset buffer to a fresh 2 mins
+    const { error } = await supabase.from('orders').update({ items: newItems, total, status: 'buffer', buffer_ends_at: Date.now() + 10000 }).eq('id', orderId);
     if (error) {
       console.error("Error updating order items", error);
       return;
