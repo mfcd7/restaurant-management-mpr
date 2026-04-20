@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, BarChart3, Users, Settings, Database, Activity, Receipt, Send, CheckCircle2, ChefHat, MessageSquare, X, TrendingUp, IndianRupee, ArrowUpRight, ArrowDownRight, Clock, Plus, Mail } from 'lucide-react';
+import { LineChart, BarChart3, Users, Settings, Database, Activity, Receipt, Send, CheckCircle2, ChefHat, MessageSquare, X, TrendingUp, IndianRupee, ArrowUpRight, ArrowDownRight, Clock, Plus, Mail, QrCode } from 'lucide-react';
 import { useRestaurant } from '../context/RestaurantContext';
 import WaiterPage from './WaiterPage';
 import KDSPage from './KDSPage';
@@ -33,6 +33,7 @@ export default function AdminPage() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailSuccessMsg, setEmailSuccessMsg] = useState('');
   const [emailErrorMsg, setEmailErrorMsg] = useState('');
+  const [showQRModalOrder, setShowQRModalOrder] = useState(null);
 
   const menuItems = getMenuItems ? getMenuItems() : [];
 
@@ -462,6 +463,12 @@ export default function AdminPage() {
                         >
                           <Send className="w-4 h-4" /> Send E-Bill
                         </button>
+                        <button
+                          className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-500/20"
+                          onClick={() => setShowQRModalOrder(order)}
+                        >
+                          <QrCode className="w-4 h-4" /> Show QR
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -770,6 +777,44 @@ export default function AdminPage() {
                   </button>
                 </form>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {showQRModalOrder && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden flex flex-col items-center">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 w-full">
+              <h2 className="font-bold text-xl text-slate-900 flex items-center gap-2">
+                <QrCode className="w-5 h-5 text-indigo-600" />
+                Scan to Pay
+              </h2>
+              <button 
+                onClick={() => setShowQRModalOrder(null)} 
+                className="text-slate-400 hover:text-slate-600 bg-white rounded-md p-1 border border-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-8 w-full flex flex-col items-center">
+              <img src="/gpay-qr.jpeg" alt="GPay QR Code" className="w-[80%] h-auto object-contain rounded-xl border border-slate-200 shadow-sm" />
+              <div className="mt-6 text-center">
+                <p className="font-black text-2xl text-slate-900">₹{showQRModalOrder.total.toFixed(2)}</p>
+                <p className="font-medium text-slate-500 mt-1">Order {showQRModalOrder.id} • {showQRModalOrder.tableId}</p>
+              </div>
+            </div>
+            <div className="w-full p-4 border-t border-slate-100 bg-slate-50 flex justify-center">
+               <button 
+                  onClick={() => {
+                     updateOrderStatus(showQRModalOrder.id, 'paid');
+                     setShowQRModalOrder(null);
+                  }}
+                  className="w-full px-5 py-3 rounded-xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 shadow-md shadow-emerald-200 transition-colors flex items-center justify-center gap-2"
+               >
+                 <CheckCircle2 className="w-5 h-5" /> Confirm Payment
+               </button>
             </div>
           </div>
         </div>
