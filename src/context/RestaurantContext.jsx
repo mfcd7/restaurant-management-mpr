@@ -62,11 +62,16 @@ export function RestaurantProvider({ children }) {
 
   // Initial fetch and subscription setup
   useEffect(() => {
-    // Local Auth Session setup
-    const savedUser = localStorage.getItem('restodash_user');
-    if (savedUser) {
-      setAuthUser(JSON.parse(savedUser));
-    }
+    // Supabase Auth Session setup
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthUser(session?.user ?? null);
+    });
+
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setAuthUser(session?.user ?? null);
+      }
+    );
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchInitialData();
@@ -97,6 +102,7 @@ export function RestaurantProvider({ children }) {
       supabase.removeChannel(tablesSubscription);
       supabase.removeChannel(ordersSubscription);
       supabase.removeChannel(messagesSubscription);
+      authSubscription.unsubscribe();
     };
   }, []);
 
@@ -265,24 +271,37 @@ export function RestaurantProvider({ children }) {
     setUserRole(null);
   };
 
-  const loginWithEmail = async (email, password) => {
-    // Mock local authentication
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (password === 'admin123') {
-          const userObj = { email };
-          localStorage.setItem('restodash_user', JSON.stringify(userObj));
-          setAuthUser(userObj);
-          resolve(userObj);
-        } else {
-          reject(new Error("Invalid login credentials. Did you use 'admin123'?"));
-        }
-      }, 500); // simulate tiny network delay
+  const signUpWithEmail = async (email, password) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
     });
+    if (error) throw error;
+    return data.user;
+  };
+
+  const loginWithEmail = async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    return data.user;
+  };
+
+  const loginWithGoogle = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin, // Important for seamless redirect
+      }
+    });
+    if (error) throw error;
+    return data;
   };
 
   const logoutAuth = async () => {
-    localStorage.removeItem('restodash_user');
+    await supabase.auth.signOut();
     setAuthUser(null);
     setUserRole(null);
   };
@@ -292,7 +311,9 @@ export function RestaurantProvider({ children }) {
     authUser,
     login,
     logout,
+    signUpWithEmail,
     loginWithEmail,
+    loginWithGoogle,
     logoutAuth,
     tables,
     orders,

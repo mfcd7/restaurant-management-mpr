@@ -6,9 +6,10 @@ import { useRestaurant } from '../context/RestaurantContext';
 export default function LoginPage() {
   const [role, setRole] = useState('admin');
   const navigate = useNavigate();
-  const { authUser, login, loginWithEmail, logoutAuth } = useRestaurant();
+  const { authUser, login, loginWithEmail, signUpWithEmail, loginWithGoogle, logoutAuth } = useRestaurant();
 
   // Auth Form State
+  const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -30,7 +31,11 @@ export default function LoginPage() {
 
     try {
       const cleanEmail = email.trim();
-      await loginWithEmail(cleanEmail, password);
+      if (isLoginMode) {
+        await loginWithEmail(cleanEmail, password);
+      } else {
+        await signUpWithEmail(cleanEmail, password);
+      }
     } catch (err) {
       setErrorMsg(err.message || 'Authentication failed');
     } finally {
@@ -101,15 +106,42 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 space-y-3">
                 <button
                   type="submit"
                   disabled={isLoading}
                   className={`w-full flex justify-center py-3 px-4 rounded-xl shadow-md text-sm font-bold text-white transition-all ${isLoading ? 'bg-indigo-400 cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'
                     }`}
                 >
-                  {isLoading ? 'Authenticating...' : 'Sign In'}
+                  {isLoading ? 'Authenticating...' : (isLoginMode ? 'Sign In' : 'Sign Up')}
                 </button>
+
+                <div className="relative flex items-center justify-center text-sm py-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-200"></div>
+                  </div>
+                  <span className="relative bg-white/80 px-4 text-slate-500 font-medium">Or</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={loginWithGoogle}
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl shadow-sm text-sm font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all"
+                >
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                  Sign in with Google
+                </button>
+
+                <div className="text-center mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsLoginMode(!isLoginMode)}
+                    className="text-sm font-semibold text-indigo-600 hover:text-indigo-500 hover:underline"
+                  >
+                    {isLoginMode ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+                  </button>
+                </div>
               </div>
             </form>
           ) : (

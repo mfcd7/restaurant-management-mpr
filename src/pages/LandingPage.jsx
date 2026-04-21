@@ -1,7 +1,23 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChefHat, TrendingUp, Smartphone, ArrowRight, Star, Users, UtensilsCrossed } from 'lucide-react';
 
 export default function LandingPage() {
+  const screenshots = [
+    '/dashboard-1.png',
+    '/dashboard-2.png',
+    '/dashboard-3.png',
+    '/dashboard-4.png'
+  ];
+  
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % screenshots.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [screenshots.length]);
   return (
     <div className="min-h-screen bg-transparent font-sans">
       {/* Navigation */}
@@ -43,10 +59,15 @@ export default function LandingPage() {
         {/* Mock UI Preview */}
         <div className="mt-24 relative rounded-[2rem] border border-white/60 bg-white/40 p-4 shadow-2xl mx-auto max-w-5xl overflow-hidden aspect-video backdrop-blur-md group cursor-pointer hover:shadow-indigo-500/20 transition-all">
           <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80" alt="Restaurant interior" className="absolute inset-0 w-full h-full object-cover opacity-20 blur-[1px] group-hover:scale-105 transition-transform duration-700" />
-          <div className="absolute inset-6 bg-white/80 backdrop-blur-xl rounded-3xl border border-white/60 shadow-2xl flex flex-col items-center justify-center p-8">
-            <img src="/logo.png" alt="RestoDash Logo" className="w-24 h-24 object-contain drop-shadow-md mb-6" />
-            <img src="/logo-text.png" alt="RestoDash" className="h-10 object-contain drop-shadow-sm mb-4" />
-            <p className="text-slate-600 font-bold text-xl">Interactive Dashboard Preview</p>
+          <div className="absolute inset-6 bg-slate-900 rounded-3xl border border-white/60 shadow-2xl overflow-hidden flex items-center justify-center">
+            {screenshots.map((src, idx) => (
+              <img 
+                key={src} 
+                src={src} 
+                alt={`Dashboard snapshot ${idx + 1}`} 
+                className={`absolute inset-0 w-full h-full object-contain p-2 transition-opacity duration-1000 ease-in-out ${idx === currentImageIndex ? 'opacity-100' : 'opacity-0'}`} 
+              />
+            ))}
           </div>
         </div>
       </section>
